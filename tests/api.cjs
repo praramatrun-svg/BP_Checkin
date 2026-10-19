@@ -12,6 +12,11 @@ test('API bridge and HttpOnly session isolation',async t=>{
     await t.test('Cross-origin request rejected',async()=>assert.equal((await call({action:'loginBPPassword',args:[]},{origin:'https://evil.example'})).statusCode,403));
     await t.test('Admin API action rejected',async()=>assert.equal((await call({action:'saveBranch',args:[]})).statusCode,400));
     await t.test('Attendance requires session cookie',async()=>assert.equal((await call({action:'attendance',args:[]})).statusCode,401));
+    await t.test('Password setup requires verified session cookie',async()=>assert.equal((await call({action:'setBPPassword',args:['staff','LongPassword123!']})).statusCode,401));
+    await t.test('Password setup forwards cookie, never a client supplied token',async()=>{
+      const result=await call({action:'setBPPassword',args:['staff','LongPassword123!'],token:'forged'},{origin,cookie:'__Host-bp-session='+session});
+      assert.equal(result.statusCode,200);assert.equal(JSON.parse(outgoing.payload).token,session);
+    });
     await t.test('Login sets Secure HttpOnly cookie and strips token',async()=>{
       const res=await call({action:'loginBPPassword',args:['user','password']});assert.equal(res.statusCode,200);assert.match(res.headers['Set-Cookie'],/HttpOnly; Secure; SameSite=Lax/);assert.equal(res.body.data.token,undefined);assert.ok(!JSON.stringify(res.body).includes(session));
       assert.equal(outgoing.signature,crypto.createHmac('sha256',secret).update(outgoing.payload).digest('hex'));assert.equal(JSON.parse(outgoing.payload).action,'loginBPPassword');
