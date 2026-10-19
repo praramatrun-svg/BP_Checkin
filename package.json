@@ -1,0 +1,7 @@
+{
+  "name": "bp-checkin-liff",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {"build": "node scripts/build.cjs", "test": "node --test tests/api.cjs"},
+  "engines": {"node": "22.x"}
+}
