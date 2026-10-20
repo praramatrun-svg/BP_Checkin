@@ -7,6 +7,7 @@ html=html.replace('updateActions();await locate()','updateActions();');
 if(html.includes('google.script.run')||html.includes('await locate()'))throw Error('Unsupported browser transport or automatic GPS');
 fs.writeFileSync(path.join(out,'index.html'),html);
 fs.copyFileSync(path.join(root,'client.js'),path.join(out,'client.js'));
+for(const file of ['ui-feedback.js','employee-extras.js'])fs.copyFileSync(path.join(root,file),path.join(out,file));
 fs.copyFileSync(path.join(root,'src/auth.css'),path.join(out,'auth.css'));
 fs.mkdirSync(path.join(out,'assets'),{recursive:true});
 fs.copyFileSync(path.join(root,'src/brand-1.jpeg'),path.join(out,'assets/brand-1.jpeg'));
