@@ -1,7 +1,7 @@
 const {createHmac,randomUUID}=require('node:crypto');
 const COOKIE='__Host-bp-session';
 const LOGIN=new Set(['loginBPLineIdToken','verifyBPLogin','loginBPPassword']);
-const ALLOWED=new Set([...LOGIN,'requestBPLogin','setBPPassword','getAttendanceData','attendance','logoutBP']);
+const ALLOWED=new Set([...LOGIN,'requestBPLogin','setBPPassword','getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance','logoutBP']);
 function cookieToken(req){const part=String(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(COOKIE+'='));return part?part.slice(COOKIE.length+1):'';}
 function sessionCookie(token){return COOKIE+'='+token+'; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age='+(token?21600:0);}
 module.exports=async function handler(req,res){
@@ -16,7 +16,7 @@ module.exports=async function handler(req,res){
     let body=req.body;if(typeof body==='string'){if(body.length>16000)throw Error('คำขอใหญ่เกินกำหนด');body=JSON.parse(body);}
     if(!body||JSON.stringify(body).length>16000||!ALLOWED.has(body.action)||!Array.isArray(body.args)||body.args.length>3)return res.status(400).json({error:'คำขอไม่ถูกต้อง'});
     const token=cookieToken(req);
-    if(['setBPPassword','getAttendanceData','attendance','logoutBP'].includes(body.action)&&!token)return res.status(401).json({error:'AUTH_REQUIRED: กรุณาเข้าสู่ระบบ'});
+    if(['setBPPassword','getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance','logoutBP'].includes(body.action)&&!token)return res.status(401).json({error:'AUTH_REQUIRED: กรุณาเข้าสู่ระบบ'});
     const payload=JSON.stringify({timestamp:Date.now(),nonce:randomUUID(),action:body.action,args:body.args,token});
     const signature=createHmac('sha256',secret).update(payload).digest('hex');
     const upstream=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({payload,signature}),redirect:'follow',signal:AbortSignal.timeout(45000)});
