@@ -1,10 +1,11 @@
 let loginPending=null;
-async function api(action,...args){
+async function rawApi(action,...args){
   const response=await fetch('/api/employee',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({action,args})});
   const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'เชื่อมต่อระบบไม่สำเร็จ');return result.data;
 }
+async function api(action,...args){return window.bpRunRequest?bpRunRequest(action,()=>rawApi(action,...args)):rawApi(action,...args);}
 async function bpServerCall(action,...args){
-  if(!['getAttendanceData','attendance'].includes(action))throw Error('ไม่รองรับคำสั่งนี้');
+  if(!['getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance'].includes(action))throw Error('ไม่รองรับคำสั่งนี้');
   try{return await api(action,...args);}catch(error){if(!error.message.includes('AUTH_REQUIRED'))throw error;await ensureLogin();return api(action,...args);}
 }
 function ensureLogin(){
