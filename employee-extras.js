@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const checkin=document.getElementById('checkin'),checkout=document.getElementById('checkout');if(!checkin||!checkout)return;
     const entered=checkin.textContent!=='--:--',exited=checkout.textContent!=='--:--';
     checkin.closest('.time-box').dataset.recorded=String(entered);checkout.closest('.time-box').dataset.recorded=String(exited);
-    for(const [id,recorded] of [['attendance',entered],['attendanceOut',exited]]){const button=document.getElementById(id);button.dataset.state=recorded?'done':button.disabled?'waiting':'ready';}
+    for(const [id,recorded] of [['attendance',entered],['attendanceOut',exited]]){const button=document.getElementById(id);button.dataset.state=recorded?'done':button.disabled?'waiting':'ready';const label=button.querySelector('span');if(label?.lastChild?.nodeType===3)label.lastChild.nodeValue=id==='attendance'?(recorded?'เข้างานแล้ว':'ลงเวลาเข้างาน'):(recorded?'ออกงานแล้ว':'ลงเวลาออกงาน');}
     summary.dataset.state=entered&&exited?'complete':entered?'incomplete':'none';
     summary.textContent=entered&&exited?'✓ ลงเวลาเข้า–ออกครบแล้ววันนี้':entered?'! ลงเวลาเข้าแล้ว · ยังไม่ได้ลงเวลาออก':'ยังไม่มีรายการลงเวลาวันนี้';
   }
@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       await call('linkBPLineIdToken',idToken);sessionStorage.removeItem('bp-line-link-pending');status.textContent='ผูกบัญชี LINE สำเร็จ ครั้งถัดไปใช้ LINE เข้าสู่ระบบได้';link.textContent='ผูก LINE แล้ว';window.bpNotice?.('ผูกบัญชี LINE สำเร็จ');
     }catch(error){status.textContent=error.message;window.bpNotice?.(error.message,true);}finally{link.disabled=false;}
   };
+  attendanceStyle.textContent+=' .actions .attendance-action{min-height:68px;padding:12px 14px;gap:3px;box-shadow:none;border-radius:12px}.attendance-action small{font-size:11px}.attendance-action[data-state=done] small{display:none}.attendance-action[data-state=done] span:before{content:"✓";font-size:18px}.attendance-action[data-state=done] svg{display:none}.attendance-action span{font-size:16px}@media(max-width:480px){.attendance-action span{font-size:14px}}';
   document.head.append(attendanceStyle);
   if(sessionStorage.getItem('bp-line-link-pending')==='1')status.textContent='กลับจาก LINE แล้ว กรุณากดผูกบัญชี LINE อีกครั้งเพื่อยืนยัน';
 });
