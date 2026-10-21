@@ -8,3 +8,7 @@
 .bp-login-card .bp-login-input>.bp-password-toggle{flex:0 0 auto;margin:0;padding:0 4px;min-width:44px;background:transparent!important;box-shadow:none!important}
 .bp-password-dialog{position:fixed!important;inset:0!important;margin:auto!important;box-sizing:border-box!important;width:min(440px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;max-height:calc(100dvh - 32px)!important;height:fit-content!important;overflow:auto!important;border:1px solid #d2deeb!important;border-radius:18px!important;padding:26px!important;background:#fff!important;box-shadow:0 20px 70px #10294340!important}
 .bp-password-dialog input,.bp-password-dialog input:focus{box-sizing:border-box!important;width:100%!important;min-width:0!important;border:1px solid #becfe2!important;border-radius:10px!important;min-height:48px!important;margin:0!important;padding:10px 12px!important;font:16px/1.5 Prompt,system-ui!important;box-shadow:none!important;outline:0!important;background:#fff!important}.bp-password-dialog input:focus-visible{border-color:#346fae!important;box-shadow:0 0 0 3px #e5effc!important}.bp-password-dialog footer{flex-wrap:wrap}
+
+/* Compact brand presentation: keep the source image and its proportions. */
+.bp-login-card .bp-login-logo{width:240px;max-width:100%;height:88px;object-fit:cover;object-position:center;filter:brightness(1.06) contrast(1.06);margin:0 auto 20px;box-shadow:none}
+@media(max-width:480px){.bp-login-card{padding-top:22px}.bp-login-card .bp-login-logo{width:220px;height:80px;margin-bottom:18px}}
