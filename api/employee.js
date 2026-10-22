@@ -1,7 +1,7 @@
 const {createHmac,randomUUID}=require('node:crypto');
 const COOKIE='__Host-bp-session';
 const LOGIN=new Set(['loginBPLineIdToken','loginBPPassword','activateBPAccount','recoverBPAccount']);
-const ALLOWED=new Set([...LOGIN,'setBPPassword','getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance','logoutBP']);
+const ALLOWED=new Set([...LOGIN,'getBPRegistrationOptions','registerBPAccount','setBPPassword','getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance','logoutBP']);
 function cookieToken(req){const part=String(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(COOKIE+'='));return part?part.slice(COOKIE.length+1):'';}
 function sessionCookie(token){return COOKIE+'='+token+'; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age='+(token?21600:0);}
 module.exports=async function handler(req,res){
