@@ -12,6 +12,8 @@ test('API bridge and HttpOnly session isolation',async t=>{
     await t.test('Cross-origin request rejected',async()=>assert.equal((await call({action:'loginBPPassword',args:[]},{origin:'https://evil.example'})).statusCode,403));
     await t.test('Admin API action rejected',async()=>assert.equal((await call({action:'saveBranch',args:[]})).statusCode,400));
     await t.test('Attendance requires session cookie',async()=>assert.equal((await call({action:'attendance',args:[]})).statusCode,401));
+    await t.test('Activation and recovery establish HttpOnly session without email',async()=>{for(const action of ['activateBPAccount','recoverBPAccount']){const result=await call({action,args:['sub001','0123456789ABCDEF','ExamplePassword123!']});assert.equal(result.statusCode,200);assert.match(result.headers['Set-Cookie'],/HttpOnly; Secure/);assert.equal(result.body.data.token,undefined);assert.equal(JSON.parse(outgoing.payload).action,action);}});
+    await t.test('Account creation and code issue cannot use employee gateway',async()=>{for(const action of ['createMemberAccess','issueMemberCode','requestBPLogin','verifyBPLogin'])assert.equal((await call({action,args:[]})).statusCode,400);});
     await t.test('Password setup requires verified session cookie',async()=>assert.equal((await call({action:'setBPPassword',args:['staff','LongPassword123!']})).statusCode,401));
     await t.test('Password setup forwards cookie, never a client supplied token',async()=>{
       const result=await call({action:'setBPPassword',args:['staff','LongPassword123!'],token:'forged'},{origin,cookie:'__Host-bp-session='+session});
@@ -28,7 +30,7 @@ test('API bridge and HttpOnly session isolation',async t=>{
       global.fetch=async()=>({ok:true,text:async()=>JSON.stringify({ok:false,error:'AUTH_REQUIRED: expired'})});const res=await call({action:'getAttendanceData',args:[]},{origin,cookie:'__Host-bp-session='+session});assert.equal(res.statusCode,401);assert.match(res.headers['Set-Cookie'],/Max-Age=0/);
     });
     await t.test('HTML upstream response handled safely',async()=>{
-      global.fetch=async()=>({ok:true,text:async()=>'<html>Login</html>'});assert.equal((await call({action:'requestBPLogin',args:['test@example.com']})).statusCode,502);
+      global.fetch=async()=>({ok:true,text:async()=>'<html>Login</html>'});assert.equal((await call({action:'loginBPPassword',args:['test','password']})).statusCode,502);
     });
   }finally{global.fetch=oldFetch;for(const key of Object.keys(process.env))if(!(key in oldEnv))delete process.env[key];Object.assign(process.env,oldEnv);}
 });
