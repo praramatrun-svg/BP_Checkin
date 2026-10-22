@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   refreshAttendancePresentation();
   const style=document.createElement('style');style.textContent='.employee-tools{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.employee-tools button{flex:1;min-height:46px;padding:10px;border:1px solid #c8d8eb;border-radius:11px;background:white;color:#174477;font:14px Prompt,system-ui;cursor:pointer}.history-dialog{position:fixed;inset:0;margin:auto;width:min(580px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;border:1px solid #d5e1ef;border-radius:18px;padding:20px;color:#173c64;font:14px Prompt,system-ui}.history-dialog::backdrop{background:#10294388}.history-dialog header,.history-nav{display:flex;align-items:center;justify-content:space-between;gap:10px}.history-dialog h2{font-size:20px;margin:0}.history-dialog button{min-height:42px;padding:8px 12px;border:1px solid #cfdbeb;border-radius:9px;background:white;color:#173c64;font:inherit;cursor:pointer}.history-nav{margin:20px 0 14px}.history-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.history-week{text-align:center;color:#74869b;padding:4px}.history-day{min-width:0;min-height:48px!important;padding:5px!important}.history-day[data-state=complete]{background:#e3f5eb;border-color:#95d0ae}.history-day[data-state=incomplete]{background:#fff2d9;border-color:#efc56d}.history-day[data-state=leave]{background:#e5f0ff;border-color:#9bc0ee}.history-day[aria-current=date]{outline:2px solid #225d9c;outline-offset:1px}.history-detail{margin-top:16px;padding:14px;border-radius:10px;background:#f1f5fa;line-height:1.8}.history-legend{font-size:12px;line-height:1.8;color:#60768d;margin:16px 0 0}';document.head.append(style);
   const tools=document.createElement('div');tools.className='employee-tools';
-  tools.innerHTML='<button type="button" id="historyTrigger">ประวัติการลงเวลาของฉัน</button><button type="button" id="linkLineTrigger">ผูกบัญชี LINE</button><p id="employeeToolsStatus" role="status" style="width:100%;font-size:12px;margin:0;color:#58738f"></p>';main.append(tools);
+  tools.innerHTML='<button type="button" id="historyTrigger">ประวัติการลงเวลาของฉัน</button><button type="button" id="linkLineTrigger">ผูกบัญชี LINE</button><button type="button" id="employeePasswordTrigger">เปลี่ยนรหัสผ่าน</button><p id="employeeToolsStatus" role="status" style="width:100%;font-size:12px;margin:0;color:#58738f"></p>';main.append(tools);
   const call=(action,...args)=>bpServerCall(action,...args),status=tools.querySelector('[role=status]');
   let dialog,month='',history=null,historyBusy=false;
   function closeHistory(){dialog?.close();dialog?.remove();dialog=null;}
@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     }catch(error){status.textContent=error.message;window.bpNotice?.(error.message,true);}finally{historyBusy=false;}
   }
   tools.querySelector('#historyTrigger').onclick=()=>showHistory();
+  tools.querySelector('#employeePasswordTrigger').onclick=()=>window.bpPasswordSettings?.();
   const link=tools.querySelector('#linkLineTrigger');
   link.onclick=async()=>{
     if(link.disabled)return;link.disabled=true;status.textContent='';
