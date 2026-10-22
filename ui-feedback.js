@@ -21,7 +21,7 @@ async function bpWithBusy(label,task){
   try{return await Promise.race([Promise.resolve().then(task),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('ไม่ได้รับการยืนยันจากเซิร์ฟเวอร์ กรุณาตรวจข้อมูลก่อนลองใหม่')),60000);})]);}
   finally{clearTimeout(timer);if(!--bpBusyCount){bpBusyLocked.forEach(el=>el.inert=false);bpBusyLocked=[];bpBusyLayer?.remove();bpBusyLayer=null;document.body.removeAttribute('aria-busy');if(bpBusyFocus?.isConnected)bpBusyFocus.focus();}}
 }
-function bpActionLabel(action){return action==='logoutBP'?'กำลังออกจากระบบ…':['attendance','setBPPassword','linkBPLineIdToken','upsertOperationalRow','saveBranch','prepareEmployeeAccount','createMemberAccess','issueMemberCode','activateBPAccount','recoverBPAccount'].includes(action)?'กำลังบันทึกข้อมูล…':action==='requestBPLogin'?'กำลังส่งรหัสยืนยัน…':/login|verify/i.test(action)?'กำลังเข้าสู่ระบบ…':'กำลังโหลดข้อมูล…';}
+function bpActionLabel(action){return action==='logoutBP'?'กำลังออกจากระบบ…':['attendance','setBPPassword','linkBPLineIdToken','upsertOperationalRow','saveBranch','prepareEmployeeAccount','createMemberAccess','registerBPAccount','reviewMemberRegistration','issueMemberCode','activateBPAccount','recoverBPAccount'].includes(action)?'กำลังบันทึกข้อมูล…':action==='requestBPLogin'?'กำลังส่งรหัสยืนยัน…':/login|verify/i.test(action)?'กำลังเข้าสู่ระบบ…':'กำลังโหลดข้อมูล…';}
 async function bpRunRequest(action,task){
   if(action==='pollBPLineLogin')return task();
   try{
