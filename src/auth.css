@@ -12,3 +12,4 @@
 /* Compact brand presentation: keep the source image and its proportions. */
 .bp-login-card .bp-login-logo{width:240px;max-width:100%;height:88px;object-fit:cover;object-position:center;filter:brightness(1.06) contrast(1.06);margin:0 auto 20px;box-shadow:none}
 @media(max-width:480px){.bp-login-card{padding-top:22px}.bp-login-card .bp-login-logo{width:220px;height:80px;margin-bottom:18px}}
+.bp-account-links a{display:inline-flex;align-items:center;min-height:44px;color:#1757a3;font:600 13px Prompt,system-ui;text-decoration:underline;text-underline-offset:4px}.employee-tools button{min-width:150px}
