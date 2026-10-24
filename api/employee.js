@@ -18,7 +18,7 @@ module.exports=async function handler(req,res){
     const token=cookieToken(req);
     if(['setBPPassword','getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance','logoutBP'].includes(body.action)&&!token)return res.status(401).json({error:'AUTH_REQUIRED: กรุณาเข้าสู่ระบบ'});
     // Keep signed text and its HTTP envelope ASCII-only; JSON.parse restores Unicode.
-    const payload=JSON.stringify({timestamp:Date.now(),nonce:randomUUID(),action:body.action,args:body.args,token}).replace(/[\u007f-\uffff]/g,char=>'\\u'+char.charCodeAt(0).toString(16).padStart(4,'0'));
+    const payload=JSON.stringify({timestamp:Date.now(),nonce:randomUUID(),action:body.action,args:body.args,token,sessionProtocol:2}).replace(/[\u007f-\uffff]/g,char=>'\\u'+char.charCodeAt(0).toString(16).padStart(4,'0'));
     const signature=createHmac('sha256',secret).update(payload,'utf8').digest('hex');
     const upstream=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({payload,signature}),redirect:'follow',signal:AbortSignal.timeout(45000)});
     const text=await upstream.text();let envelope;try{envelope=JSON.parse(text);}catch{throw Error('Backend ไม่ตอบกลับเป็นข้อมูล กรุณาตรวจ Deployment Apps Script');}
