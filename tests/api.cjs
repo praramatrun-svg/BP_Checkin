@@ -20,7 +20,7 @@ test('API bridge and HttpOnly session isolation',async t=>{
     await t.test('Password setup requires verified session cookie',async()=>assert.equal((await call({action:'setBPPassword',args:['staff','LongPassword123!']})).statusCode,401));
     await t.test('Password setup forwards cookie, never a client supplied token',async()=>{
       const result=await call({action:'setBPPassword',args:['staff','LongPassword123!'],token:'forged'},{origin,cookie:'__Host-bp-session='+session});
-      assert.equal(result.statusCode,200);assert.equal(JSON.parse(outgoing.payload).token,session);assert.match(result.headers['Set-Cookie'],/HttpOnly; Secure/);assert.equal(result.body.data.token,undefined);
+      assert.equal(result.statusCode,200);assert.equal(JSON.parse(outgoing.payload).token,session);assert.equal(JSON.parse(outgoing.payload).sessionProtocol,2);assert.match(result.headers['Set-Cookie'],/HttpOnly; Secure/);assert.equal(result.body.data.token,undefined);
     });
     await t.test('Login sets Secure HttpOnly cookie and strips token',async()=>{
       const res=await call({action:'loginBPPassword',args:['user','password']});assert.equal(res.statusCode,200);assert.match(res.headers['Set-Cookie'],/HttpOnly; Secure; SameSite=Lax/);assert.equal(res.body.data.token,undefined);assert.ok(!JSON.stringify(res.body).includes(session));
