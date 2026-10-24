@@ -1,7 +1,7 @@
 const {createHmac,randomUUID}=require('node:crypto');
 const COOKIE='__Host-bp-session';
-const LOGIN=new Set(['loginBPLineIdToken','loginBPPassword','activateBPAccount','recoverBPAccount']);
-const ALLOWED=new Set([...LOGIN,'getBPRegistrationOptions','registerBPAccount','setBPPassword','getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance','logoutBP']);
+const LOGIN=new Set(['loginBPLineIdToken','loginBPPassword','setBPPassword']);
+const ALLOWED=new Set([...LOGIN,'getBPRegistrationOptions','registerBPAccount','requestBPPasswordReset','setBPPassword','getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance','logoutBP']);
 function cookieToken(req){const part=String(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(COOKIE+'='));return part?part.slice(COOKIE.length+1):'';}
 function sessionCookie(token){return COOKIE+'='+token+'; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age='+(token?21600:0);}
 module.exports=async function handler(req,res){
@@ -24,7 +24,7 @@ module.exports=async function handler(req,res){
     const text=await upstream.text();let envelope;try{envelope=JSON.parse(text);}catch{throw Error('Backend ไม่ตอบกลับเป็นข้อมูล กรุณาตรวจ Deployment Apps Script');}
     if(!upstream.ok||!envelope.ok){const error=String(envelope.error||'เชื่อมต่อ Backend ไม่สำเร็จ');if(error.includes('AUTH_REQUIRED')){res.setHeader('Set-Cookie',sessionCookie(''));return res.status(401).json({error});}return res.status(400).json({error});}
     const data=envelope.data;
-    if(body.action==='registerBPAccount')return res.status(200).json({ok:true,data:{status:data.status||'PENDING',message:data.message||'รอผู้ดูแลอนุมัติ'}});
+    if(['registerBPAccount','requestBPPasswordReset'].includes(body.action))return res.status(200).json({ok:true,data:{status:data.status||'PENDING',message:data.message||'รอผู้ดูแลอนุมัติ'}});
     if(LOGIN.has(body.action)){
       if(!/^[a-f0-9-]{72}$/i.test(String(data?.token||'')))throw Error('เซสชันไม่ถูกต้อง');
       res.setHeader('Set-Cookie',sessionCookie(data.token));return res.status(200).json({ok:true,data:{user:data.user}});
