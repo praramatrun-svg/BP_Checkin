@@ -1,7 +1,50 @@
 let loginPending=null;
-async function rawApi(action,...args){const response=await fetch('/api/employee',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({action,args})});const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'เชื่อมต่อระบบไม่สำเร็จ');return result.data;}
+async function rawApi(action,...args){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),55000);
+ try{
+  const response=await fetch('/api/employee',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',signal:controller.signal,body:JSON.stringify({action,args})});
+  let result;try{result=await response.json();}catch{throw Error('เซิร์ฟเวอร์ตอบกลับไม่สมบูรณ์ กรุณาลองใหม่');}
+  if(!response.ok||!result.ok)throw Error(result.error||'เชื่อมต่อระบบไม่สำเร็จ');return result.data;
+ }catch(error){if(error.name==='AbortError')throw Error(/login/i.test(action)?'ระบบใช้เวลาตอบกลับนาน กรุณาลองเข้าสู่ระบบใหม่':'ไม่ได้รับการยืนยันจากเซิร์ฟเวอร์ กรุณาตรวจข้อมูลก่อนลองใหม่');throw error;}finally{clearTimeout(timer);}
+}
 async function api(action,...args){return window.bpRunRequest?bpRunRequest(action,()=>rawApi(action,...args)):rawApi(action,...args);}
-async function bpServerCall(action,...args){if(!['getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance'].includes(action))throw Error('ไม่รองรับคำสั่งนี้');try{return await api(action,...args);}catch(error){if(error.message.includes('PASSWORD_CHANGE_REQUIRED')){await bpEnforcePasswordChange((name,...values)=>api(name,...values));return api(action,...args);}if(!error.message.includes('AUTH_REQUIRED'))throw error;await ensureLogin();return api(action,...args);}}
+
+const BP_LINE_INTENT_KEY='bp-line-login-intent';
+let bpLineInitialization=null;
+function bpLineStorage(action,value){try{if(action==='get')return sessionStorage.getItem(BP_LINE_INTENT_KEY);if(action==='set')sessionStorage.setItem(BP_LINE_INTENT_KEY,value);else if(action==='remove')sessionStorage.removeItem(BP_LINE_INTENT_KEY);}catch{}return null;}
+function bpShouldResumeLineLogin(){
+ const params=new URLSearchParams(location.search),stamp=Number(bpLineStorage('get')),age=Date.now()-stamp;
+ const pending=stamp>0&&age>=0&&age<600000;if(stamp&&!pending)bpLineStorage('remove');
+ let inClient=false;try{inClient=!!window.liff?.isInClient?.();}catch{}
+ return pending||params.get('bp_line_login')==='1'||params.has('liff.state')||(params.get('liffClientId')===window.BP_LIFF_ID&&(params.has('code')||params.has('state')||params.has('error')))||inClient;
+}
+function bpInitializeLine(){
+ if(bpLineInitialization)return bpLineInitialization;
+ bpLineInitialization=(async()=>{
+  if(!window.liff)throw Error('โหลด LINE ไม่สำเร็จ กรุณาเปิดหน้าใหม่');
+  let timer;
+  try{
+   await Promise.race([Promise.resolve().then(()=>window.liff.init({liffId:window.BP_LIFF_ID})),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('เชื่อมต่อ LINE ใช้เวลานาน กรุณาปิดแล้วเปิดหน้าใหม่')),12000);})]);
+  }catch(error){if(String(error.message||'').startsWith('เชื่อมต่อ LINE ใช้เวลานาน'))throw error;const code=String(error.code||'').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40);throw Error('เชื่อมต่อ LINE ไม่สำเร็จ'+(code?' ('+code+')':'')+' กรุณาลองเปิดหน้าใหม่');}finally{clearTimeout(timer);}
+ })();return bpLineInitialization;
+}
+function bpClearLineLoginIntent(){
+ bpLineStorage('remove');
+ // LIFF must finish processing its own URL parameters before changing our marker.
+ try{const url=new URL(location.href);if(url.searchParams.has('bp_line_login')){url.searchParams.delete('bp_line_login');history.replaceState(null,'',url.pathname+url.search+url.hash);}}catch{}
+}
+async function bpCompleteLineLogin(resuming=false){
+ await bpInitializeLine();
+ if(!window.liff.isLoggedIn()){
+  if(resuming){bpClearLineLoginIntent();throw Error('ยังไม่ได้ยืนยันกับ LINE กรุณากดเข้าสู่ระบบด้วย LINE อีกครั้ง');}
+  bpLineStorage('set',String(Date.now()));
+  window.liff.login({redirectUri:location.origin+'/?bp_line_login=1'});return false;
+ }
+ const token=window.liff.getIDToken();if(!token){bpClearLineLoginIntent();throw Error('ไม่ได้รับข้อมูลยืนยันตัวตน LINE กรุณาเปิดใหม่และอนุญาตสิทธิ์เข้าสู่ระบบ');}
+ try{await api('loginBPLineIdToken',token);return true;}finally{bpClearLineLoginIntent();}
+}
+
+async function bpServerCall(action,...args){const loginAtStart=loginPending;if(!['getAttendanceData','getBPAttendanceHistory','getBPAccountState','linkBPLineIdToken','attendance'].includes(action))throw Error('ไม่รองรับคำสั่งนี้');try{return await api(action,...args);}catch(error){if(error.message.includes('PASSWORD_CHANGE_REQUIRED')){await bpEnforcePasswordChange((name,...values)=>api(name,...values));return api(action,...args);}if(!error.message.includes('AUTH_REQUIRED'))throw error;await (loginAtStart||loginPending||ensureLogin());return api(action,...args);}}
 function ensureLogin(){
  if(loginPending)return loginPending;
  loginPending=new Promise(resolve=>{
@@ -25,8 +68,11 @@ function ensureLogin(){
   layer.querySelector('[data-account="reset"]').onclick=()=>{account.reset();choose('account');};
   account.onsubmit=event=>{event.preventDefault();const fields=account.elements;run(account.querySelector('[type=submit]'),async()=>{const response=await api('requestBPPasswordReset',{Username:fields.username.value,FullName:fields.fullName.value,Company:fields.company.value});account.reset();choose('');message.textContent=response.message;});};
   password.onsubmit=event=>{event.preventDefault();run(password.querySelector('[type=submit]'),async()=>{await api('loginBPPassword',password.elements.username.value,password.elements.password.value);password.elements.password.value='';await finish();});};
-  layer.querySelector('.bp-line-login').onclick=event=>run(event.currentTarget,async()=>{if(!window.liff)throw Error('โหลด LINE ไม่สำเร็จ กรุณาเปิดหน้าใหม่');await liff.init({liffId:window.BP_LIFF_ID});if(!liff.isLoggedIn()){liff.login({redirectUri:location.origin+'/'});return;}const token=liff.getIDToken();if(!token)throw Error('กรุณาเปิดใช้งาน scope openid ใน LIFF');await api('loginBPLineIdToken',token);await finish();});
+  const lineButton=layer.querySelector('.bp-line-login');
+  async function continueLineLogin(resuming){choose('line');await run(lineButton,async()=>{message.textContent=resuming?'กำลังเข้าสู่ระบบต่อจาก LINE…':'กำลังเชื่อมต่อ LINE…';if(await bpCompleteLineLogin(resuming)){await finish();}else{message.textContent='กำลังเปิด LINE เพื่อยืนยันตัวตน…';}});}
+  lineButton.onclick=()=>continueLineLogin(false);
   choose('');
+  if(bpShouldResumeLineLogin())continueLineLogin(true);
  });return loginPending;
 }
 async function bpPasswordSettings(){
@@ -37,3 +83,6 @@ async function bpPasswordSettings(){
   form.onsubmit=async event=>{event.preventDefault();if(form.elements.password.value!==form.elements.confirm.value){status.textContent='รหัสผ่านทั้งสองช่องไม่ตรงกัน';return;}const button=form.querySelector('[type=submit]');if(button.disabled)return;button.disabled=true;try{await api('setBPPassword',form.elements.username.value,form.elements.password.value);form.elements.password.value='';form.elements.confirm.value='';dialog.close();window.bpNotice?.('เปลี่ยนรหัสผ่านสำเร็จ');}catch(error){status.textContent=error.message;}finally{button.disabled=false;}};document.body.append(dialog);dialog.showModal();
  }catch(error){window.bpNotice?.(error.message,true);}
 }
+
+// Start LIFF callback processing before the first attendance request.
+if(bpShouldResumeLineLogin())ensureLogin();
