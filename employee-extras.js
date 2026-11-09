@@ -12,9 +12,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   const times=main.querySelector('.times'),locationCard=main.querySelector('.location-card');
   main.classList.add('attendance-page');
   const locationDetails=document.createElement('details');locationDetails.className='location-details';locationDetails.innerHTML='<summary>ดูแผนที่และรายละเอียดตำแหน่ง <span aria-hidden="true">⌄</span></summary>';
-  if(locationCard){locationCard.append(locationDetails);for(const selector of ['.map-wrap','.accuracy']){const element=locationCard.querySelector(selector);if(element)locationDetails.append(element);}const title=locationCard.querySelector('.location-title>div');if(title)title.firstChild.textContent='ตำแหน่งสำหรับลงเวลา';}
+  if(locationCard&&!locationCard.querySelector('.attendance-mini-map')){locationCard.append(locationDetails);for(const selector of ['.map-wrap','.accuracy']){const element=locationCard.querySelector(selector);if(element)locationDetails.append(element);}const title=locationCard.querySelector('.location-title>div');if(title)title.firstChild.textContent='ตำแหน่งสำหรับลงเวลา';}
   const gpsGuidance=document.createElement('p');gpsGuidance.className='gps-guidance';gpsGuidance.setAttribute('role','status');const locationState=document.getElementById('locationState');if(locationState){locationState.hidden=true;locationState.after(gpsGuidance);}
-  function refreshLocationPresentation(){const text=locationState?.textContent||'',reading=document.getElementById('refreshLocation')?.disabled;gpsGuidance.textContent=reading?'กำลังตรวจตำแหน่ง…':locationCard?.querySelector('iframe')&&!/ไม่สามารถ/.test(text)?'พร้อมใช้งาน · ตรวจพื้นที่สาขาขณะบันทึก':/ไม่สามารถ/.test(text)?'ยังไม่ได้ตำแหน่ง · กดลองใหม่ได้':'ตรวจตำแหน่งก่อนบันทึกเวลา';locationCard?.setAttribute('data-gps-state',reading?'loading':/ไม่สามารถ/.test(text)?'error':locationCard?.querySelector('iframe')?'ready':'waiting');}
+  function refreshLocationPresentation(){const text=locationState?.textContent||'',reading=document.getElementById('refreshLocation')?.disabled;gpsGuidance.textContent=(reading||text.includes('กำลังตรวจ'))?'กำลังตรวจตำแหน่ง…':locationCard?.querySelector('.mini-you,iframe')&&!/ไม่สามารถ/.test(text)?'พร้อมใช้งาน · ตรวจพื้นที่สาขาขณะบันทึก':/ไม่สามารถ/.test(text)?'ยังไม่ได้ตำแหน่ง · กดลองใหม่ได้':'ตรวจอัตโนมัติเมื่อกดลงเวลา';locationCard?.setAttribute('data-gps-state',reading?'loading':/ไม่สามารถ/.test(text)?'error':locationCard?.querySelector('iframe')?'ready':'waiting');}
   const gpsObserver=new MutationObserver(refreshLocationPresentation);if(locationState)gpsObserver.observe(locationState,{childList:true,subtree:true});const refreshButton=document.getElementById('refreshLocation');if(refreshButton)gpsObserver.observe(refreshButton,{attributes:true,attributeFilter:['disabled']});refreshLocationPresentation();
   const summary=document.createElement('div');summary.className='today-summary';summary.setAttribute('role','status');
   if(times&&locationCard){locationCard.before(times);times.after(summary);}
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     for(const [id,recorded] of [['attendance',entered],['attendanceOut',exited]]){const button=document.getElementById(id);button.dataset.state=recorded?'done':button.disabled?'waiting':'ready';const label=button.querySelector('span');if(label?.lastChild?.nodeType===3)label.lastChild.nodeValue=id==='attendance'?(recorded?'เข้างานแล้ว':'ลงเวลาเข้างาน'):(recorded?'ออกงานแล้ว':'ลงเวลาออกงาน');}
     main.dataset.dayState=entered&&exited?'complete':entered?'working':'new';
     summary.dataset.state=entered&&exited?'complete':entered?'incomplete':'none';
-    summary.textContent=entered&&exited?'✓ ลงเวลาเข้า–ออกครบแล้ววันนี้':entered?'เข้างานแล้ว · ลงเวลาออกเมื่อเลิกงาน':'เริ่มงานวันนี้ · ตรวจตำแหน่งแล้วลงเวลาเข้า';
+    summary.textContent=entered&&exited?'✓ ลงเวลาเข้า–ออกครบแล้ววันนี้':entered?'เข้างานแล้ว · ลงเวลาออกเมื่อเลิกงาน':'เริ่มงานวันนี้ · กดลงเวลาเพื่อตรวจตำแหน่ง';
   }
   const attendanceObserver=new MutationObserver(refreshAttendancePresentation);
   for(const id of ['checkin','checkout']){const element=document.getElementById(id);if(element)attendanceObserver.observe(element,{childList:true,characterData:true,subtree:true});}
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   let dialog,month='',history=null,historyBusy=false;
   const historyCache=new Map();
   window.bpInvalidateAttendanceHistory=()=>historyCache.clear();
-  function closeHistory(){dialog?.close();dialog?.remove();dialog=null;}
+  function closeHistory(){dialog?.remove();dialog=null;main.hidden=false;historyTrigger.focus();}
   function dateString(year,monthIndex,day){return year+'-'+String(monthIndex+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');}
   async function showHistory(offset=0){
     if(historyBusy)return;historyBusy=true;
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         historyCache.set(target,{savedAt:Date.now(),data:history});
       }
       month=target;
-      if(!dialog){dialog=document.createElement('dialog');dialog.className='history-dialog';dialog.setAttribute('aria-label','ประวัติการลงเวลาของฉัน');dialog.innerHTML='<header><h2>ประวัติการลงเวลาของฉัน</h2><button type="button" data-close>ปิด</button></header><div class="history-nav"><button type="button" data-prev aria-label="เดือนก่อน">‹</button><strong id="historyMonth"></strong><button type="button" data-next aria-label="เดือนถัดไป">›</button></div><div class="history-grid"></div><p class="history-legend">เขียว: ลงเวลาครบ · ส้ม: ลงเวลาไม่ครบ · ฟ้า: ลาอนุมัติ<br>วันที่ว่างหมายถึงไม่มีข้อมูลลงเวลา ไม่ได้สรุปว่าขาดงาน</p><div class="history-detail" role="status">เลือกวันที่เพื่อดูรายละเอียด</div>';document.body.append(dialog);dialog.querySelector('[data-close]').onclick=closeHistory;dialog.querySelector('[data-prev]').onclick=()=>showHistory(-1);dialog.querySelector('[data-next]').onclick=()=>showHistory(1);dialog.addEventListener('cancel',()=>{dialog.remove();dialog=null;});dialog.showModal();}
+      if(!dialog){dialog=document.createElement('main');dialog.className='history-dialog history-page';dialog.setAttribute('aria-label','ประวัติการลงเวลาของฉัน');dialog.innerHTML='<header><h2>ประวัติการลงเวลาของฉัน</h2><button type="button" data-close>กลับหน้าลงเวลา</button></header><div class="history-nav"><button type="button" data-prev aria-label="เดือนก่อน">‹</button><strong id="historyMonth"></strong><button type="button" data-next aria-label="เดือนถัดไป">›</button></div><div class="history-grid"></div><p class="history-legend">เขียว: ลงเวลาครบ · ส้ม: ลงเวลาไม่ครบ · ฟ้า: ลาอนุมัติ<br>วันที่ว่างหมายถึงไม่มีข้อมูลลงเวลา ไม่ได้สรุปว่าขาดงาน</p><div class="history-detail" role="status">เลือกวันที่เพื่อดูรายละเอียด</div>';document.body.append(dialog);dialog.querySelector('[data-close]').onclick=closeHistory;dialog.querySelector('[data-prev]').onclick=()=>showHistory(-1);dialog.querySelector('[data-next]').onclick=()=>showHistory(1);main.hidden=true;dialog.querySelector('[data-close]').focus();}
       dialog.querySelector('#historyMonth').textContent=new Intl.DateTimeFormat('th-TH',{timeZone:'UTC',month:'long',year:'numeric'}).format(date);
       let monthSummary=dialog.querySelector('.history-summary');
       if(!monthSummary){monthSummary=document.createElement('div');monthSummary.className='history-summary';monthSummary.setAttribute('aria-label','สรุปการลงเวลาเดือนนี้');dialog.querySelector('.history-grid').before(monthSummary);}
@@ -113,6 +113,15 @@ document.addEventListener('DOMContentLoaded',()=>{
     }catch(error){status.textContent=error.message;window.bpNotice?.(error.message,true);}finally{link.disabled=false;}
   };
   attendanceStyle.textContent+=' .actions .attendance-action{min-height:68px;padding:12px 14px;gap:3px;box-shadow:none;border-radius:12px}.attendance-action small{font-size:11px}.attendance-action[data-state=done] small{display:none}.attendance-action[data-state=done] span:before{content:"✓";font-size:18px}.attendance-action[data-state=done] svg{display:none}.attendance-action span{font-size:16px}@media(max-width:480px){.attendance-action span{font-size:14px}}';
+  attendanceStyle.textContent+=`
+  .attendance-page[hidden]{display:none!important}.history-dialog.history-page{position:static;inset:auto;margin:18px auto;max-height:none;overflow:visible;background:#fff}
+  .attendance-page .actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .attendance-page .actions .attendance-action{display:flex!important}.attendance-page[data-day-state=complete] .location-card{display:block!important}
+  .attendance-page .message:not(:empty){display:block}.attendance-page .map-wrap:has(.attendance-mini-map){height:138px!important}
+  .attendance-mini-map{width:100%;height:100%;position:relative;overflow:hidden;background:repeating-linear-gradient(0deg,transparent 0 23px,#dce8f4 24px 25px),repeating-linear-gradient(90deg,#edf5fc 0 34px,#dce8f4 35px 36px);color:#174477}
+  .attendance-mini-map .mini-zone{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:84px;height:84px;border:1px dashed #4986bc;background:#659ed62a;border-radius:50%}
+  .attendance-mini-map .mini-branch,.attendance-mini-map .mini-you{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:2px 6px;border-radius:5px;font-size:11px;white-space:nowrap}.attendance-mini-map .mini-you{color:#08734c}.attendance-mini-map .mini-branch{margin-top:-12px}.attendance-mini-map small{position:absolute;bottom:4px;left:6px;background:#fff;padding:1px 4px;font-size:10px}
+  `;
   document.head.append(attendanceStyle);
   if(sessionStorage.getItem('bp-line-link-pending')==='1')status.textContent='กลับจาก LINE แล้ว กรุณากดผูกบัญชี LINE อีกครั้งเพื่อยืนยัน';
 });
