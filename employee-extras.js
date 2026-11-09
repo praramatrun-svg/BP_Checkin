@@ -122,6 +122,39 @@ document.addEventListener('DOMContentLoaded',()=>{
   .attendance-mini-map .mini-zone{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:84px;height:84px;border:1px dashed #4986bc;background:#659ed62a;border-radius:50%}
   .attendance-mini-map .mini-branch,.attendance-mini-map .mini-you{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:2px 6px;border-radius:5px;font-size:11px;white-space:nowrap}.attendance-mini-map .mini-you{color:#08734c}.attendance-mini-map .mini-branch{margin-top:-12px}.attendance-mini-map small{position:absolute;bottom:4px;left:6px;background:#fff;padding:1px 4px;font-size:10px}
   `;
+  const shell=main.querySelector('.clock-card'), clock=main.querySelector('.clock-head'), location=main.querySelector('.location-card'), actions=main.querySelector('.actions');
+  const brand=document.createElement('div');brand.className='bp-attendance-brand';brand.innerHTML='<span class="bp-attendance-mark" aria-hidden="true">BP</span><div><small>HONDA MALIWAN</small><strong>ลงเวลาประจำวัน</strong></div>';shell.prepend(brand);brand.append(accountMenu);
+  header.querySelector('.eyebrow').textContent='สวัสดีครับ';
+  const date=clock.querySelector('.date');clock.prepend(date);const zone=document.createElement('small');zone.textContent='เวลาไทย';clock.append(zone);
+  const locationTitle=document.createElement('h2');locationTitle.className='bp-attendance-location-title';locationTitle.textContent='ตำแหน่งลงเวลา';location.prepend(locationTitle);
+  location.querySelector('.location-head').hidden=true;location.querySelector('#accuracy').hidden=true;
+  location.append(gpsGuidance);shell.append(tools);actions.before(document.getElementById('message'));
+  attendanceStyle.textContent+=`
+  .attendance-page{width:min(600px,100%);padding:10px 8px 20px}
+  .attendance-page .clock-card{border-radius:24px;overflow:visible;padding-bottom:18px;box-shadow:0 14px 34px #071c351a}
+  .bp-attendance-brand{position:relative;z-index:2;display:flex;align-items:center;gap:12px;background:#102f54;color:#fff;padding:16px 20px;border-radius:23px 23px 0 0}
+  .bp-attendance-brand small,.bp-attendance-brand strong{display:block}.bp-attendance-brand small{color:#b9d3ee;letter-spacing:.11em;font-size:11px}.bp-attendance-brand strong{font-size:15px}
+  .bp-attendance-mark{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#254a72;font-weight:700}
+  .bp-attendance-brand .employee-account-menu{position:relative;top:auto;right:auto;margin-left:auto}
+  .bp-attendance-brand .employee-account-menu>summary{color:#fff;background:transparent;border-color:#557494}
+  .attendance-page .employee-header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:0 8px;margin:0 20px;padding:18px 0 12px;border:0}
+  .attendance-page .employee-header .eyebrow{grid-column:1/-1;margin:0}.attendance-page .employee-header .branch{margin:0;font-size:12px}
+  .attendance-page .clock-head{margin:0 20px 12px;padding:12px;background:#eff5fc;border-radius:16px;text-align:center}
+  .attendance-page .clock-head .date{margin:0 0 4px}.attendance-page .clock-head>small{color:#526a82}
+  .attendance-page .clock-seconds,.attendance-page .today-summary{display:none}
+  .attendance-page .clock-main{font-size:clamp(42px,10vw,60px)}
+  .attendance-page .times{padding:0 20px 12px}.attendance-page .time-box{background:#fff}
+  .attendance-page .location-card{display:block;margin:0 20px 6px;padding-top:10px;border:0;border-top:1px solid #dce6f1;border-radius:0;overflow:visible}
+  .attendance-page .location-card [hidden]{display:none!important}.bp-attendance-location-title{font-size:16px;margin:0 0 6px}
+  .attendance-page .map-wrap:has(.attendance-mini-map){height:140px!important;border:1px solid #dce6f1;border-radius:12px;overflow:hidden}
+  .attendance-page .gps-guidance{font-size:12px;margin:6px 0 0}.attendance-page .actions{padding:0 20px}
+  .attendance-page .actions .attendance-action{flex-direction:column;align-items:center;justify-content:center;min-height:49px;padding:8px 4px;background:#165aa0}
+  .attendance-page .actions .attendance-action:disabled{background:#eff5fc;color:#526a82}.attendance-page .actions .attendance-action small,.attendance-page .actions .attendance-action svg{display:none}
+  .attendance-page .attendance-action span{font-size:14px;text-align:center}
+  .attendance-page .employee-tools{margin:12px 20px 0}.attendance-page .employee-tools #historyTrigger{min-height:46px}
+  .attendance-page .message:not(.error){margin:0;padding:0 20px 5px}.attendance-page .message:empty,.attendance-page .employee-tools p:empty{display:none}
+  @media(max-width:390px){.attendance-page .employee-header{grid-template-columns:1fr}.attendance-page .employee-header .branch{margin-top:3px}.attendance-page .clock-main{font-size:46px}}
+  `;
   document.head.append(attendanceStyle);
   if(sessionStorage.getItem('bp-line-link-pending')==='1')status.textContent='กลับจาก LINE แล้ว กรุณากดผูกบัญชี LINE อีกครั้งเพื่อยืนยัน';
 });
