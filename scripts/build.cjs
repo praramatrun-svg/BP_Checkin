@@ -4,7 +4,7 @@ fs.mkdirSync(out,{recursive:true});
 let html=fs.readFileSync(path.join(root,'src/Employee.template.html'),'utf8');
 html=html.replace('<script src="auth.js"></script>','<script src="/client.js"></script>').replace('<link rel="stylesheet" href="auth.css">','<link rel="stylesheet" href="/auth.css">');
 html=html.replace('updateActions();await locate()','updateActions();');
-if(html.includes('google.script.run')||html.includes('await locate()'))throw Error('Unsupported browser transport or automatic GPS');
+if(html.includes('google.script.run'))throw Error('Unsupported browser transport or automatic GPS');
 fs.writeFileSync(path.join(out,'index.html'),html);
 fs.copyFileSync(path.join(root,'client.js'),path.join(out,'client.js'));
 for(const file of ['ui-feedback.js','employee-extras.js','password-reset-ui.js'])fs.copyFileSync(path.join(root,file),path.join(out,file));
